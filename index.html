@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wetter Osnabrück & Lotte</title>
+  <meta name="theme-color" content="#ffffff"/>
+  <style>
+    :root {
+      --bg: #f0f4f8;
+      --card: white;
+      --text: #333;
+      --accent: #3b82f6;
+      --uv-low: #10b981;
+      --uv-mod: #fbbf24;
+      --uv-high: #f97316;
+      --uv-vhigh: #ef4444;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      color: var(--accent);
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .tab {
+      padding: 10px 20px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: var(--accent);
+      color: white;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+    }
+    .current {
+      text-align: center;
+    }
+    .emoji {
+      font-size: 6rem;
+      margin: 8px 0;
+    }
+    .temp {
+      font-size: 4.5rem;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-around;
+      margin: 24px 0;
+    }
+    .info-box {
+      text-align: center;
+    }
+    .info-box strong {
+      font-size: 1.8rem;
+      display: block;
+    }
+    .info-box small {
+      color: #666;
+    }
+    .hours {
+      overflow-x: auto;
+      white-space: nowrap;
+      padding-bottom: 12px;
+    }
+    .hour-card {
+      display: inline-block;
+      width: 80px;
+      text-align: center;
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 12px;
+      margin-right: 12px;
+    }
+    .day-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .update-info {
+      text-align: center;
+      color: #666;
+      font-size: 0.9rem;
+      margin-top: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --card: #1e293b;
+        --text: #e2e8f0;
+      }
+      .hour-card, .day-card { background: #334155; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Wetter Osnabrück & Lotte</h1>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-ort="osnabrueck">Osnabrück</div>
+  <div class="tab" data-ort="lotte">Lotte</div>
+</div>
+
+<div id="content">
+  <div class="card current" id="current"></div>
+  <h3>Nächste Stunden</h3>
+  <div class="hours" id="hours"></div>
+  <h3>7-Tage-Vorschau</h3>
+  <div id="days"></div>
+  <div class="update-info" id="update"></div>
+</div>
+
+<script>
+  const ORTE = {
+    osnabrueck: { name: 'Osnabrück', lat: 52.2799, lon: 8.0472 },
+    lotte: { name: 'Lotte', lat: 52.2784, lon: 7.9200 }
+  };
+
+  let aktuell = 'osnabrueck';
+  let lastUpdate = null;
+
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      aktuell = tab.dataset.ort;
+      laden();
+    });
+  });
+
+  async function laden() {
+    const ort = ORTE[aktuell];
+    const url = `https://api.open-meteo.com/v1/forecast?` +
+      `latitude=${ort.lat}&longitude=${ort.lon}` +
+      `&current=temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,precipitation_probability,uv_index` +
+      `&hourly=temperature_2m,weather_code,precipitation_probability,uv_index` +
+      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,sunrise,sunset` +
+      `&models=icon_d2` +
+      `&timezone=Europe/Berlin&forecast_days=7`;
+
+    document.getElementById('current').innerHTML = '<p>Lade...</p>';
+
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      const data = await res.json();
+
+      lastUpdate = new Date();
+
+      // Wetter-Code zu Emoji & Text
+      const emojiMap = {
+        0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
+        51: '🌧️', 61: '🌧️', 63: '🌧️', 80: '🌦️', 81: '⛈️', 95: '⛈️'
+      };
+      const textMap = {
+        0: 'Klar', 1: 'Meist klar', 45: 'Nebel', 61: 'Regen', 80: 'Schauer', 95: 'Gewitter'
+      };
+
+      const getEmoji = code => emojiMap[code] || '🌥️';
+      const getText = code => textMap[code] || 'Bewölkt';
+
+      const uvFarbe = uv => {
+        if (uv < 3) return 'var(--uv-low)';
+        if (uv < 6) return 'var(--uv-mod)';
+        if (uv < 8) return 'var(--uv-high)';
+        return 'var(--uv-vhigh)';
+      };
+
+      // Aktuell
+      const curr = data.current;
+      document.getElementById('current').innerHTML = `
+        <div class="emoji">${getEmoji(curr.weather_code)}</div>
+        <div class="temp">${Math.round(curr.temperature_2m)}°C</div>
+        <p>Gefühlt ${Math.round(curr.apparent_temperature)}°C • ${getText(curr.weather_code)}</p>
+        <div class="info-row">
+          <div class="info-box">
+            <strong style="color:${uvFarbe(curr.uv_index)}">${curr.uv_index?.toFixed(1) || '-'}</strong>
+            <small>UV-Index</small>
+          </div>
+          <div class="info-box">
+            <strong>${curr.precipitation_probability || 0}%</strong>
+            <small>Regen</small>
+          </div>
+          <div class="info-box">
+            <strong>${curr.relative_humidity_2m || '?'}%</strong>
+            <small>Feuchte</small>
+          </div>
+        </div>
+        <p>☀️ ${new Date(data.daily.sunrise[0]).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} – ${new Date(data.daily.sunset[0]).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</p>
+      `;
+
+      // Stunden
+      const hoursDiv = document.getElementById('hours');
+      hoursDiv.innerHTML = '';
+      for (let i = 0; i < 24; i++) {
+        const h = data.hourly;
+        const time = new Date(h.time[i]);
+        const div = document.createElement('div');
+        div.className = 'hour-card';
+        div.innerHTML = `
+          <div>${time.toLocaleTimeString('de-DE',{hour:'2-digit'})}</div>
+          <div class="emoji" style="font-size:2.2rem">${getEmoji(h.weather_code[i])}</div>
+          <div>${Math.round(h.temperature_2m[i])}°</div>
+          <div style="color:#3b82f6">${h.precipitation_probability[i]}%</div>
+        `;
+        hoursDiv.appendChild(div);
+      }
+
+      // Tage
+      const daysDiv = document.getElementById('days');
+      daysDiv.innerHTML = '';
+      for (let i = 0; i < data.daily.time.length; i++) {
+        const d = data.daily;
+        const date = new Date(d.time[i]);
+        const div = document.createElement('div');
+        div.className = 'day-card';
+        div.innerHTML = `
+          <div>
+            <strong>${date.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'})}</strong><br>
+            ${getEmoji(d.weather_code[i])}
+          </div>
+          <div>
+            ${Math.round(d.temperature_2m_max[i])}° / ${Math.round(d.temperature_2m_min[i])}°
+          </div>
+          <div style="text-align:right">
+            <div style="color:#3b82f6">${d.precipitation_probability_max[i]}%</div>
+            <div style="color:${uvFarbe(d.uv_index_max[i])}">UV ${d.uv_index_max[i]?.toFixed(0) || '-'}</div>
+          </div>
+        `;
+        daysDiv.appendChild(div);
+      }
+
+      document.getElementById('update').textContent = 
+        `Zuletzt aktualisiert: ${lastUpdate.toLocaleString('de-DE')} • DWD ICON-D2 (alle ~3 Std neu)`;
+
+    } catch (err) {
+      document.getElementById('current').innerHTML = '<p style="color:red">Fehler beim Laden – Internet prüfen?</p>';
+    }
+  }
+
+  laden();
+  setInterval(laden, 15 * 60 * 1000); // Alle 15 Min neu laden
+</script>
+
+</body>
+</html>
