@@ -3,356 +3,307 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Wetter App – Osnabrück, Lotte & mehr</title>
-  <meta name="theme-color" content="#ffffff"/>
+  <title>Wetter Osnabrück & Lotte – Mit 7-Tage-Vorhersage</title>
   <style>
     :root {
-      --bg: linear-gradient(135deg, #87CEEB, #E0F7FA);
-      --card: rgba(255,255,255,0.92);
-      --text: #1a1a1a;
+      --bg-sunny: linear-gradient(135deg, #74ebd5, #ACB6E5);
+      --bg-cloudy: linear-gradient(135deg, #bdc3c7, #2c3e50);
+      --bg-rain: linear-gradient(135deg, #1e3c72, #2a5298);
+      --bg-snow: linear-gradient(135deg, #e6dada, #274046);
+      --card: rgba(255,255,255,0.85);
+      --text: #111;
       --accent: #0288d1;
-      --uv-low: #4caf50;
-      --uv-mod: #ffeb3b;
-      --uv-high: #ff9800;
-      --uv-vhigh: #f44336;
     }
     [data-theme="dark"] {
-      --bg: linear-gradient(135deg, #0d1b2a, #1b263b);
-      --card: rgba(30,41,59,0.92);
+      --card: rgba(30,41,59,0.85);
       --text: #e2e8f0;
-      --accent: #60a5fa;
     }
     body {
       margin: 0;
       font-family: system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
       min-height: 100vh;
-      transition: background 0.6s ease;
+      color: var(--text);
+      transition: background 0.8s ease;
       background-size: cover;
+      background-attachment: fixed;
     }
     header {
+      padding: 20px;
+      text-align: center;
+      background: rgba(0,0,0,0.2);
+      backdrop-filter: blur(10px);
+    }
+    h1 { margin: 0; font-size: 2rem; color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+    h3 { color: white; text-shadow: 0 1px 4px black; margin: 32px 0 16px; text-align: center; }
+    .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+    .current-card {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 32px 24px;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+      backdrop-filter: blur(12px);
+      margin-bottom: 32px;
+    }
+    .emoji { font-size: 8rem; margin: 0; line-height: 1; }
+    .temp { font-size: 6rem; font-weight: bold; margin: 8px 0; line-height: 0.9; }
+    .description { font-size: 1.6rem; margin: 8px 0; opacity: 0.9; }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 20px;
+      margin: 32px 0;
+    }
+    .info-item {
+      background: rgba(255,255,255,0.3);
+      border-radius: 16px;
       padding: 16px;
       text-align: center;
-      background: rgba(0,0,0,0.15);
-      backdrop-filter: blur(6px);
     }
-    h1 { margin: 0; font-size: 1.9rem; }
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      justify-content: center;
-      margin: 16px 0;
+    .info-value { font-size: 2.2rem; font-weight: bold; }
+    .info-label { font-size: 1rem; opacity: 0.8; }
+    .hours { display: flex; overflow-x: auto; gap: 16px; padding: 12px 0; }
+    .hour-card {
+      flex: 0 0 100px;
+      background: rgba(255,255,255,0.4);
+      border-radius: 16px;
+      padding: 16px 12px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
-    input, button {
-      padding: 10px 16px;
-      border: none;
-      border-radius: 999px;
-      font-size: 1rem;
-    }
-    input { width: 220px; background: var(--card); color: var(--text); }
-    button { background: var(--accent); color: white; cursor: pointer; }
-    button:hover { opacity: 0.9; }
-    .theme-toggle { background: #666; }
-    .content { max-width: 900px; margin: 0 auto; padding: 0 16px; }
-    .card {
-      background: var(--card);
+    .hour-time { font-weight: bold; margin-bottom: 8px; }
+    .hour-emoji { font-size: 3rem; }
+    .hour-temp { font-size: 1.4rem; }
+    .hour-pop { color: #60a5fa; font-weight: bold; }
+    .days { display: flex; flex-direction: column; gap: 16px; }
+    .day-card {
+      background: rgba(255,255,255,0.4);
       border-radius: 16px;
       padding: 20px;
-      margin: 20px 0;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-      backdrop-filter: blur(8px);
-    }
-    .current { text-align: center; }
-    .emoji { font-size: 7rem; margin: 8px 0; line-height: 1; }
-    .temp { font-size: 5rem; font-weight: bold; margin: 0; }
-    .info-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px,1fr)); gap: 16px; margin: 24px 0; }
-    .info-box { text-align: center; }
-    .info-box strong { font-size: 2rem; display: block; }
-    .info-box small { opacity: 0.8; }
-    .hours { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 12px; }
-    .hour-card {
-      flex: 0 0 90px;
-      text-align: center;
-      background: rgba(255,255,255,0.3);
-      border-radius: 12px;
-      padding: 12px;
-      [data-theme="dark"] & { background: rgba(255,255,255,0.1); }
-    }
-    .days { display: grid; gap: 12px; }
-    .day-card {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      background: rgba(255,255,255,0.25);
-      border-radius: 12px;
-      padding: 16px;
-      [data-theme="dark"] & { background: rgba(255,255,255,0.08); }
+      justify-content: space-between;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      flex-wrap: wrap;
+      gap: 16px;
     }
-    .loading { text-align: center; font-size: 1.3rem; padding: 40px; }
-    .error { color: #ef4444; text-align: center; padding: 20px; }
-    .favorites { margin: 16px 0; text-align: center; }
-    .fav-btn { margin: 4px; font-size: 0.9rem; }
+    .day-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .day-emoji { font-size: 3.5rem; }
+    .day-name { font-size: 1.3rem; font-weight: bold; min-width: 100px; }
+    .day-temp { font-size: 1.6rem; }
+    .day-right {
+      text-align: right;
+      min-width: 100px;
+    }
+    .day-pop { color: #60a5fa; font-size: 1.4rem; font-weight: bold; }
+    .day-uv { font-size: 1.3rem; }
+    .sun-info { font-size: 1.2rem; margin-top: 16px; opacity: 0.9; }
+    .update { text-align: center; margin: 32px 0; opacity: 0.8; font-size: 1rem; color: white; text-shadow: 0 1px 3px black; }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin: 16px 0;
+    }
+    .tab {
+      padding: 10px 24px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.3);
+      cursor: pointer;
+      font-weight: 600;
+      color: white;
+      transition: all 0.3s;
+    }
+    .tab.active { background: white; color: #0288d1; }
     @media (max-width: 600px) {
-      .temp { font-size: 4rem; }
-      .emoji { font-size: 5rem; }
+      .temp { font-size: 5rem; }
+      .emoji { font-size: 6rem; }
+      .day-card { flex-direction: column; text-align: center; }
+      .day-right { text-align: center; width: 100%; }
     }
   </style>
 </head>
-<body>
+<body data-theme="dark">
 
 <header>
-  <h1>Wetter App</h1>
+  <h1>Wetter Osnabrück & Lotte</h1>
 </header>
 
-<div class="controls">
-  <input id="cityInput" placeholder="Stadt suchen (z.B. Berlin)" autocomplete="off"/>
-  <button onclick="searchCity()">Suchen</button>
-  <button class="theme-toggle" onclick="toggleTheme()">Dark/Light</button>
-  <button onclick="getLocation()">Mein Standort</button>
+<div class="tabs">
+  <div class="tab active" data-ort="osnabrueck">Osnabrück</div>
+  <div class="tab" data-ort="lotte">Lotte</div>
 </div>
 
-<div class="favorites">
-  <small>Gespeicherte Orte: </small>
-  <div id="favoritesList"></div>
-</div>
+<div class="container">
+  <div class="current-card" id="current"></div>
 
-<div class="content" id="content">
-  <div class="loading" id="loading">Lade Wetterdaten...</div>
-  <div id="current" class="card current" style="display:none"></div>
-  <div id="hoursSection" style="display:none">
+  <div class="hours-section">
     <h3>Nächste 24 Stunden</h3>
     <div class="hours" id="hours"></div>
   </div>
-  <div id="daysSection" style="display:none">
+
+  <div class="days-section">
     <h3>7-Tage-Vorhersage</h3>
     <div class="days" id="days"></div>
   </div>
-  <div id="updateInfo" style="text-align:center; margin:20px 0; opacity:0.7;"></div>
-  <div id="error" class="error" style="display:none"></div>
+
+  <div class="update" id="update"></div>
 </div>
 
 <script>
-  const DEFAULT_CITY = { name: 'Osnabrück', lat: 52.2799, lon: 8.0472 };
-  let currentCity = JSON.parse(localStorage.getItem('lastCity')) || DEFAULT_CITY;
-  let favorites = JSON.parse(localStorage.getItem('favorites')) || ['Osnabrück', 'Lotte'];
-
-  const emojiMap = {
-    0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
-    45: '🌫️', 48: '🌫️',
-    51: '🌧️', 53: '🌧️', 61: '🌧️', 63: '🌧️', 80: '🌦️', 81: '⛈️', 95: '⛈️',
-    71: '❄️', 73: '❄️'
+  const ORTE = {
+    osnabrueck: { name: 'Osnabrück', lat: 52.2799, lon: 8.0472 },
+    lotte: { name: 'Lotte', lat: 52.2784, lon: 7.9200 }
   };
 
-  const backgroundMap = {
-    0: 'linear-gradient(135deg, #facc15, #f97316)',     // sonnig
-    1: 'linear-gradient(135deg, #60a5fa, #3b82f6)',     // leicht bewölkt
-    2: 'linear-gradient(135deg, #94a3b8, #64748b)',     // bewölkt
-    3: 'linear-gradient(135deg, #64748b, #334155)',     // stark bewölkt
-    45: 'linear-gradient(135deg, #9ca3af, #6b7280)',    // nebel
-    defaultRain: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', // regen
-    defaultSnow: 'linear-gradient(135deg, #e2e8f0, #cbd5e1)'  // schnee
-  };
+  let aktuell = 'osnabrueck';
 
-  function getEmoji(code) { return emojiMap[code] || '🌥️'; }
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      aktuell = tab.dataset.ort;
+      laden();
+    });
+  });
 
-  function getBackground(code) {
-    if (code === 0) return backgroundMap[0];
-    if ([1,2,3].includes(code)) return backgroundMap[code];
-    if ([45,48].includes(code)) return backgroundMap[45];
-    if ([51,53,55,61,63,65,80,81,82].includes(code)) return backgroundMap.defaultRain;
-    if ([71,73,75,77,85,86].includes(code)) return backgroundMap.defaultSnow;
-    return 'linear-gradient(135deg, #87CEEB, #E0F7FA)'; // fallback
-  }
-
-  function uvColor(uv) {
-    if (uv < 3) return 'var(--uv-low)';
-    if (uv < 6) return 'var(--uv-mod)';
-    if (uv < 8) return 'var(--uv-high)';
-    return 'var(--uv-vhigh)';
-  }
-
-  async function fetchWeather(lat, lon, name) {
-    showLoading();
+  async function laden() {
+    const ort = ORTE[aktuell];
     const url = `https://api.open-meteo.com/v1/forecast?` +
-      `latitude=${lat}&longitude=${lon}` +
+      `latitude=${ort.lat}&longitude=${ort.lon}` +
       `&current=temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,precipitation_probability,uv_index` +
-      `&hourly=temperature_2m,weather_code,precipitation_probability,uv_index` +
+      `&hourly=temperature_2m,weather_code,precipitation_probability` +
       `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,sunrise,sunset` +
-      `&timezone=Europe/Berlin&forecast_days=7&models=icon_d2`;
+      `&models=icon_d2&timezone=Europe/Berlin&forecast_days=7`;
+
+    document.getElementById('current').innerHTML = '<p style="color:white;text-align:center;font-size:1.5rem;">Lade frische Daten...</p>';
 
     try {
       const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('API Fehler');
       const data = await res.json();
-
-      document.body.style.background = getBackground(data.current.weather_code);
-
-      // Current
       const curr = data.current;
+
+      const weatherCode = curr.weather_code;
+      const emoji = getEmoji(weatherCode);
+      const bg = getBackground(weatherCode);
+      document.body.style.background = bg;
+
+      // Aktuelles Wetter
       document.getElementById('current').innerHTML = `
-        <div class="emoji">${getEmoji(curr.weather_code)}</div>
+        <div class="emoji">${emoji}</div>
         <div class="temp">${Math.round(curr.temperature_2m)}°</div>
-        <p>Gefühlt ${Math.round(curr.apparent_temperature)}° • ${getWeatherText(curr.weather_code)}</p>
-        <div class="info-row">
-          <div class="info-box"><strong style="color:${uvColor(curr.uv_index)}">${curr.uv_index?.toFixed(1)||'-'}</strong><small>UV-Index</small></div>
-          <div class="info-box"><strong>${curr.precipitation_probability||0}%</strong><small>Regen</small></div>
-          <div class="info-box"><strong>${curr.relative_humidity_2m||'?'}%</strong><small>Feuchte</small></div>
+        <div class="description">Gefühlt ${Math.round(curr.apparent_temperature)}° • ${getText(weatherCode)}</div>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-value" style="color:${uvColor(curr.uv_index)}">${curr.uv_index?.toFixed(1) || '-'}</div>
+            <div class="info-label">UV-Index</div>
+          </div>
+          <div class="info-item">
+            <div class="info-value" style="color:#60a5fa">${curr.precipitation_probability || 0}%</div>
+            <div class="info-label">Regen</div>
+          </div>
+          <div class="info-item">
+            <div class="info-value">${curr.relative_humidity_2m || '?'}%</div>
+            <div class="info-label">Feuchte</div>
+          </div>
         </div>
-        <p>☀️ ${formatTime(data.daily.sunrise[0])} – ${formatTime(data.daily.sunset[0])}</p>
+        <div class="sun-info">☀️ ${formatTime(data.daily.sunrise[0])} – ${formatTime(data.daily.sunset[0])}</div>
       `;
 
-      // Stunden
+      // Nächste 24 Stunden
       let hoursHTML = '';
       for (let i = 0; i < 24; i++) {
         const h = data.hourly;
-        const t = new Date(h.time[i]);
+        const time = new Date(h.time[i]);
+        const hourEmoji = getEmoji(h.weather_code[i]);
         hoursHTML += `
           <div class="hour-card">
-            <div>${t.toLocaleTimeString('de-DE',{hour:'2-digit'})}</div>
-            <div style="font-size:2.5rem">${getEmoji(h.weather_code[i])}</div>
-            <div>${Math.round(h.temperature_2m[i])}°</div>
-            <div style="color:var(--accent)">${h.precipitation_probability[i]}%</div>
+            <div class="hour-time">${time.getHours().toString().padStart(2,'0')} Uhr</div>
+            <div class="hour-emoji">${hourEmoji}</div>
+            <div class="hour-temp">${Math.round(h.temperature_2m[i])}°</div>
+            <div class="hour-pop">${h.precipitation_probability[i]}%</div>
           </div>`;
       }
       document.getElementById('hours').innerHTML = hoursHTML;
 
-      // Tage
+      // 7-Tage-Vorhersage
       let daysHTML = '';
       for (let i = 0; i < data.daily.time.length; i++) {
         const d = data.daily;
         const date = new Date(d.time[i]);
+        const dayEmoji = getEmoji(d.weather_code[i]);
+        const uvMax = d.uv_index_max[i];
         daysHTML += `
           <div class="day-card">
-            <div>
-              <strong>${date.toLocaleDateString('de-DE',{weekday:'short',day:'numeric'})}</strong><br>
-              ${getEmoji(d.weather_code[i])}
+            <div class="day-left">
+              <div class="day-emoji">${dayEmoji}</div>
+              <div>
+                <div class="day-name">${date.toLocaleDateString('de-DE', {weekday: 'short', day: 'numeric', month: 'short'})}</div>
+                <div class="day-temp">${Math.round(d.temperature_2m_max[i])}° / ${Math.round(d.temperature_2m_min[i])}°</div>
+              </div>
             </div>
-            <div>${Math.round(d.temperature_2m_max[i])}° / ${Math.round(d.temperature_2m_min[i])}°</div>
-            <div style="text-align:right">
-              <div style="color:var(--accent)">${d.precipitation_probability_max[i]}%</div>
-              <div style="color:${uvColor(d.uv_index_max[i])}">UV ${d.uv_index_max[i]?.toFixed(0)||'-'}</div>
+            <div class="day-right">
+              <div class="day-pop">${d.precipitation_probability_max[i]}%</div>
+              <div class="day-uv" style="color:${uvColor(uvMax)}">UV ${uvMax?.toFixed(0) || '-'}</div>
             </div>
           </div>`;
       }
       document.getElementById('days').innerHTML = daysHTML;
 
-      document.getElementById('updateInfo').textContent = `Zuletzt aktualisiert: ${new Date().toLocaleString('de-DE')} • Open-Meteo / DWD ICON-D2`;
-
-      document.getElementById('current').style.display = 'block';
-      document.getElementById('hoursSection').style.display = 'block';
-      document.getElementById('daysSection').style.display = 'block';
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('error').style.display = 'none';
-
-      // Speichern
-      currentCity = { name: name || currentCity.name, lat, lon };
-      localStorage.setItem('lastCity', JSON.stringify(currentCity));
-      addToFavorites(name || currentCity.name);
+      document.getElementById('update').textContent = 
+        `Zuletzt aktualisiert: ${new Date().toLocaleString('de-DE', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'})} Uhr • Open-Meteo / DWD ICON-D2`;
 
     } catch (err) {
-      showError('Fehler beim Laden – Internet prüfen oder API überlastet?');
+      document.getElementById('current').innerHTML = '<p style="color:#ff6b6b;text-align:center;font-size:1.3rem;">Fehler – Internet prüfen?</p>';
     }
   }
 
-  function getWeatherText(code) {
-    if ([0].includes(code)) return 'Klar';
+  function getEmoji(code) {
+    if (code === 0) return '☀️';
+    if ([1,2,3].includes(code)) return '⛅';
+    if ([45,48].includes(code)) return '🌫️';
+    if ([51,53,55,61,63,65,80,81,82].includes(code)) return '🌧️';
+    if ([71,73,75].includes(code)) return '❄️';
+    if ([95,96,99].includes(code)) return '⛈️';
+    return '☁️';
+  }
+
+  function getText(code) {
+    if (code === 0) return 'Klar';
     if ([1,2,3].includes(code)) return 'Bewölkt';
     if ([45,48].includes(code)) return 'Nebel';
     if ([51,53,55,61,63,65,80,81,82].includes(code)) return 'Regen';
-    if ([71,73,75,77].includes(code)) return 'Schnee';
+    if ([71,73,75].includes(code)) return 'Schnee';
     if ([95,96,99].includes(code)) return 'Gewitter';
     return 'Unbekannt';
   }
 
-  function formatTime(iso) { return new Date(iso).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'}); }
-
-  function showLoading() {
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('current').style.display = 'none';
-    document.getElementById('hoursSection').style.display = 'none';
-    document.getElementById('daysSection').style.display = 'none';
-    document.getElementById('error').style.display = 'none';
+  function getBackground(code) {
+    if (code === 0) return 'var(--bg-sunny)';
+    if ([1,2,3].includes(code)) return 'var(--bg-cloudy)';
+    if ([51,53,55,61,63,65,80,81,82].includes(code)) return 'var(--bg-rain)';
+    if ([71,73,75].includes(code)) return 'var(--bg-snow)';
+    return 'var(--bg-cloudy)';
   }
 
-  function showError(msg) {
-    document.getElementById('error').textContent = msg;
-    document.getElementById('error').style.display = 'block';
-    document.getElementById('loading').style.display = 'none';
+  function uvColor(uv) {
+    if (!uv) return '#aaa';
+    if (uv < 3) return '#4caf50';
+    if (uv < 6) return '#ffeb3b';
+    if (uv < 8) return '#ff9800';
+    return '#f44336';
   }
 
-  async function searchCity() {
-    const input = document.getElementById('cityInput').value.trim();
-    if (!input) return;
-    try {
-      const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(input)}&count=1&language=de`);
-      const data = await res.json();
-      if (data.results?.length > 0) {
-        const loc = data.results[0];
-        fetchWeather(loc.latitude, loc.longitude, loc.name);
-      } else {
-        showError('Stadt nicht gefunden');
-      }
-    } catch {
-      showError('Fehler bei der Ortssuche');
-    }
+  function formatTime(iso) {
+    return new Date(iso).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
   }
 
-  function getLocation() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        pos => fetchWeather(pos.coords.latitude, pos.coords.longitude, 'Mein Standort'),
-        err => showError('Standortzugriff verweigert – nutze Suche')
-      );
-    } else {
-      showError('Geolocation nicht unterstützt');
-    }
-  }
-
-  function toggleTheme() {
-    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }
-
-  // Dark Mode per System
-  if (localStorage.getItem('theme') === 'dark' ||
-      (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  }
-
-  function addToFavorites(name) {
-    if (!favorites.includes(name) && name !== 'Mein Standort') {
-      favorites.push(name);
-      localStorage.setItem('favorites', JSON.stringify(favorites));
-      renderFavorites();
-    }
-  }
-
-  function renderFavorites() {
-    const list = document.getElementById('favoritesList');
-    list.innerHTML = '';
-    favorites.forEach(name => {
-      const btn = document.createElement('button');
-      btn.className = 'fav-btn';
-      btn.textContent = name;
-      btn.onclick = () => {
-        // Einfache Suche nach Namen (nicht perfekt, aber ok für Demo)
-        document.getElementById('cityInput').value = name;
-        searchCity();
-      };
-      list.appendChild(btn);
-    });
-  }
-
-  // Start
-  renderFavorites();
-  fetchWeather(currentCity.lat, currentCity.lon, currentCity.name);
-
-  // Auto-Refresh alle 15 Min
-  setInterval(() => fetchWeather(currentCity.lat, currentCity.lon, currentCity.name), 15*60*1000);
+  laden();
+  setInterval(laden, 15 * 60 * 1000);
 </script>
-
 </body>
 </html>
